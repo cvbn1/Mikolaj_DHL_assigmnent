@@ -1,5 +1,6 @@
 package com.dhl.transitcalculator.page;
 
+import com.dhl.transitcalculator.utils.utils;
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -34,6 +35,7 @@ public class TransitTimeCalculatorPage {
     // ====== (optional) RESULT / LOADER ======
     private final By resultPanel = By.cssSelector(".js--swe-leadtime--options-container");
     private final By loader      = By.cssSelector(".c-calculator button.is-loading");
+    private utils WebDriverUtils;
 
     // ====== CONSTRUCTOR ======
     public TransitTimeCalculatorPage(WebDriver driver, String baseUrl) {
@@ -73,8 +75,8 @@ public class TransitTimeCalculatorPage {
 
     // ====== SUBMIT ======
     public TransitTimeCalculatorPage clickCalculate() {
-        waitUntilClickable(calculateButton).click();
-        // wait for loader to disappear if present
+        WebElement button = waitUntilClickable(calculateButton);
+        WebDriverUtils.safeClick(driver, button);
         try {
             wait.until(ExpectedConditions.invisibilityOfElementLocated(loader));
         } catch (TimeoutException ignored) {}
