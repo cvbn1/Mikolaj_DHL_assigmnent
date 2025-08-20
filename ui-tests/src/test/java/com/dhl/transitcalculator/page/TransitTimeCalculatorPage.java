@@ -5,6 +5,7 @@ import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import java.time.Duration;
+import com.dhl.transitcalculator.constants.Country;
 
 /**
  * Transit Time Calculator – Page Object.
@@ -176,4 +177,15 @@ public class TransitTimeCalculatorPage {
         By option = By.cssSelector("#" + root.getAttribute("id") + " > option[value='" + countryCode + "']");
         waitUntilClickable(option).click();
     }
+
+    //
+
+    public TransitTimeCalculatorPage selectOriginCountry(Country country) {
+        return selectOriginCountry(country.getCode());
+    }
+
+    public TransitTimeCalculatorPage selectDestinationCountry(Country country) {
+        return selectDestinationCountry(country.getCode());
+    }
+
 }
