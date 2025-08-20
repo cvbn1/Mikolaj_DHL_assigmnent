@@ -8,7 +8,6 @@ import java.time.Duration;
 
 /**
  * Transit Time Calculator – Page Object.
- * Fill in the selectors (TODO) based on actual DOM.
  */
 public class TransitTimeCalculatorPage {
 
@@ -32,9 +31,14 @@ public class TransitTimeCalculatorPage {
     // ====== CTA ======
     private final By calculateButton = By.cssSelector(".c-calculator button");
 
-    // ====== (optional) RESULT / LOADER ======
-    private final By resultPanel = By.cssSelector(".js--swe-leadtime--options-container");
+    // ====== RESULT / LOADER ======
+    private final By resultPanel = By.cssSelector(".js--leadtime--options-container");
     private final By loader      = By.cssSelector(".c-calculator button.is-loading");
+
+    // ====== GLOBAL ERROR (shipment retrieval) ======
+    private final By globalError = By.cssSelector(".c-calculator--error-message.js--freight-coutries-general-error-message");
+
+
     private utils WebDriverUtils;
 
     // ====== CONSTRUCTOR ======
@@ -76,11 +80,28 @@ public class TransitTimeCalculatorPage {
     // ====== SUBMIT ======
     public TransitTimeCalculatorPage clickCalculate() {
         WebElement button = waitUntilClickable(calculateButton);
-        WebDriverUtils.safeClick(driver, button);
-        try {
-            wait.until(ExpectedConditions.invisibilityOfElementLocated(loader));
-        } catch (TimeoutException ignored) {}
+        utils.safeClick(driver, button);
         return this;
+    }
+
+    public TransitTimeCalculatorPage waitForLoaderToAppear(long seconds) {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(seconds))
+                    .until(ExpectedConditions.visibilityOfElementLocated(loader));
+        } catch (TimeoutException ignored) {  }
+        return this;
+    }
+
+    public void waitForLoaderToDisappear(long seconds) {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(seconds))
+                    .until(ExpectedConditions.invisibilityOfElementLocated(loader));
+        } catch (TimeoutException ignored) {  }
+    }
+
+    public void waitForNetworkToSettle() {
+        waitForLoaderToAppear(2)
+                .waitForLoaderToDisappear(10);
     }
 
     // ====== VALIDATION MESSAGES ======
@@ -91,6 +112,23 @@ public class TransitTimeCalculatorPage {
     public String destinationPostcodeErrorText() {
         return getTextSafe(destinationPostcodeError);
     }
+
+    public boolean isGlobalErrorVisible() {
+        try {
+            return wait.until(ExpectedConditions.visibilityOfElementLocated(globalError)).isDisplayed();
+        } catch (TimeoutException e) {
+            return false;
+        }
+    }
+
+    public String globalErrorText() {
+        try {
+            return wait.until(ExpectedConditions.visibilityOfElementLocated(globalError)).getText().trim();
+        } catch (TimeoutException e) {
+            return "";
+        }
+    }
+
 
     public boolean isResultVisible() {
         return isVisible(resultPanel);
@@ -132,11 +170,10 @@ public class TransitTimeCalculatorPage {
      * If the element is a native <select>, use Selenium Select API instead.
      * If the dropdown is custom, adjust the option locator accordingly.
      */
-    private void openDropdownAndPick(By dropdownRoot, String visibleText) {
+    private void openDropdownAndPick(By dropdownRoot, String countryCode) {
         WebElement root = waitUntilClickable(dropdownRoot);
         root.click();
-        // TODO: adjust option locator based on DOM
-        By option = By.xpath("//*[contains(@class,'option') and normalize-space()='" + visibleText + "']");
+        By option = By.cssSelector("#" + root.getAttribute("id") + " > option[value='" + countryCode + "']");
         waitUntilClickable(option).click();
     }
 }
