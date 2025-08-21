@@ -11,7 +11,6 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
-
 import java.time.Duration;
 
 /**
@@ -31,7 +30,6 @@ public abstract class BaseTest {
                 "https://www.dhl.com/se-en/home/freight/tools/european-road-freight-transit-time-calculator.html");
 
         WebDriverManager.chromedriver().setup();
-
         ChromeOptions options = new ChromeOptions();
         options.addArguments("--headless=new");
         options.addArguments("--window-size=1920,1080");
@@ -49,13 +47,12 @@ public abstract class BaseTest {
 
     private void acceptCookiesIfVisible() {
         By acceptBtn = By.id("onetrust-accept-btn-handler");
-            try {
-                WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(3));
-                WebElement button = wait.until(ExpectedConditions.elementToBeClickable(acceptBtn));
-                button.click();
+        try {
+            WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(3));
+            WebElement button = wait.until(ExpectedConditions.elementToBeClickable(acceptBtn));
+            button.click();
             } catch (TimeoutException ignored) {
-
-            }
+        }
     }
 
     @AfterEach

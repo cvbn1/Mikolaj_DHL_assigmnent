@@ -1,93 +1,158 @@
 package com.dhl.transitcalculator.tests;
 
-import com.dhl.transitcalculator.page.TransitTimeCalculatorPage;
 import com.dhl.transitcalculator.constants.Country;
 import com.dhl.transitcalculator.constants.TestConstants;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import com.dhl.transitcalculator.page.TransitTimeCalculatorPage;
+import org.junit.jupiter.api.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * Transit Time Calculator – validation & basic happy paths.
+ * Structure:
+ *  - setup
+ *  - shared helpers
+ *  - nested groups: HappyPath, FieldValidation, Mismatch
+ */
+@DisplayName("Transit Calculator: Validation & Results")
 class TransitCalculatorValidationTest extends BaseTest {
 
     private TransitTimeCalculatorPage page;
 
+    // --------- Setup ---------
     @BeforeEach
     void openCalculator() {
         page = new TransitTimeCalculatorPage(driver, baseUrl).open();
+        assertTrue(page.isAt(), "Calculator root should be visible");
     }
 
-    @Test
-    @DisplayName("Happy path: valid CZ → SE input shows result panel")
-    void submittingValidForm_showsResultPanel() {
-        page
-                .selectOriginCountry(Country.CZECH_REPUBLIC)
-                .typeOriginPostcode(Country.CZECH_REPUBLIC.getValidPostcode())
-                .typeDestinationPostcode(Country.SWEDEN.getValidPostcode())
-                .clickCalculate()
-                .waitForNetworkToSettle();
+    // --------- Helpers ---------
 
-        assertTrue(page.isResultVisible(), "Result panel should be visible for valid CZ→SE input");
-    }
-
-    @Test
-    @DisplayName("Empty submit shows validation on both fields (visible + exact copy)")
-    void submittingEmptyForm_showsBothErrorMessages() {
+    /** Clicks Calculate and waits until network/loader settles. */
+    private void calculateAndWait() {
         page.clickCalculate().waitForNetworkToSettle();
+    }
 
-        String originErr = page.originPostcodeErrorText().trim();
-        String destinationErr = page.destinationPostcodeErrorText().trim();
+    private String originErr() {
+        return page.originPostcodeErrorText().trim();
+    }
+
+    private String destinationErr() {
+        return page.destinationPostcodeErrorText().trim();
+    }
+
+    /** Asserts both postcode fields show the exact same expected error text. */
+    private void assertBothFieldErrors() {
+        String origin = originErr();
+        String destination = destinationErr();
 
         assertAll(
-                () -> assertFalse(originErr.isBlank(), "Origin error should not be empty"),
-                () -> assertFalse(destinationErr.isBlank(), "Destination error should not be empty"),
-                () -> assertEquals(TestConstants.POSTAL_CODE_ERROR, originErr, "Origin error text should match definition"),
-                () -> assertEquals(TestConstants.POSTAL_CODE_ERROR, destinationErr, "Destination error text should match definition")
+                () -> assertFalse(origin.isBlank(), "Origin error should not be empty"),
+                () -> assertFalse(destination.isBlank(), "Destination error should not be empty"),
+                () -> assertEquals(TestConstants.POSTAL_CODE_ERROR, origin, "Origin error text should match"),
+                () -> assertEquals(TestConstants.POSTAL_CODE_ERROR, destination, "Destination error text should match")
         );
     }
 
-    @Test
-    @DisplayName("Invalid postal codes: shows validation on both fields (visible + exact copy)")
-    void submittingInvalidPostalCodes_showsExpectedErrorTexts() {
-        page
-                .typeOriginPostcode(TestConstants.INVALID_POSTAL_CODE)
-                .typeDestinationPostcode(TestConstants.INVALID_POSTAL_CODE)
-                .clickCalculate()
-                .waitForNetworkToSettle();
-
-        String originErr = page.originPostcodeErrorText().trim();
-        String destinationErr = page.destinationPostcodeErrorText().trim();
-
+    /** Asserts result overlay is shown (success path). */
+    private void assertResultVisible() {
         assertAll(
-                () -> assertFalse(originErr.isBlank(), "Origin error should not be empty"),
-                () -> assertFalse(destinationErr.isBlank(), "Destination error should not be empty"),
-                () -> assertEquals(TestConstants.POSTAL_CODE_ERROR, originErr, "Origin error text should match definition"),
-                () -> assertEquals(TestConstants.POSTAL_CODE_ERROR, destinationErr, "Destination error text should match definition")
+                () -> assertTrue(page.isResultVisible(), "Result panel should be visible"),
+                () -> assertTrue(page.isCalculatorOverlayVisible(), "Overlay should cover the calculator")
         );
     }
 
-    @Test
-    @DisplayName("Mismatched postcodes vs countries → shows global retrieval error and no result")
-    void submittingMismatchedPostcodes_showsGlobalError_noResult() {
-        page
-                // Origin: Sweden + CZ postcode (mismatch)
-                .selectOriginCountry(Country.SWEDEN)
-                .typeOriginPostcode(Country.CZECH_REPUBLIC.getValidPostcode())
-                // Destination: Czech Republic + SE postcode (mismatch)
-                .selectDestinationCountry(Country.CZECH_REPUBLIC)
-                .typeDestinationPostcode(Country.SWEDEN.getValidPostcode())
-                .clickCalculate()
-                .waitForNetworkToSettle();
+    // --------- Test Groups ---------
 
-        String err = page.globalErrorText();
+    @Nested
+    @DisplayName("Happy Path")
+    class HappyPath {
 
-        assertAll(
-                () -> assertTrue(page.isGlobalErrorVisible(), "Global retrieval error should be visible"),
-                () -> assertFalse(err.isBlank(), "Global retrieval error text should not be empty"),
-                () -> assertFalse(page.isResultVisible(), "Result panel should NOT be visible"),
-                () -> assertTrue(err.contains(TestConstants.TOOL_UNAVAILABLE_ERROR),
-                        "Global error should contain expected phrase (actual: " + err + ")")
-        );
+        @Test
+        @DisplayName("Valid CZ → SE shows results")
+        void validCZtoSE_showsResult() {
+            page
+                    .selectOriginCountry(Country.CZECH_REPUBLIC)
+                    .typeOriginPostcode(Country.CZECH_REPUBLIC.getValidPostcode())
+                    .typeDestinationPostcode(Country.SWEDEN.getValidPostcode());
+
+            calculateAndWait();
+            assertResultVisible();
+        }
+
+        @Test
+        @DisplayName("Valid SE → CZ shows results")
+        void validSEtoCZ_showsResult() {
+            page
+                    .typeOriginPostcode(Country.SWEDEN.getValidPostcode())
+                    .selectDestinationCountry(Country.CZECH_REPUBLIC)
+                    .typeDestinationPostcode(Country.CZECH_REPUBLIC.getValidPostcode());
+
+            calculateAndWait();
+            assertResultVisible();
+        }
+    }
+
+    @Nested
+    @DisplayName("Field Validation")
+    class FieldValidation {
+
+        @Test
+        @DisplayName("Empty submit shows both field errors (exact copy)")
+        void emptySubmit_showsBothErrors() {
+            calculateAndWait();
+            assertBothFieldErrors();
+        }
+
+        @Test
+        @DisplayName("Invalid numeric postcodes show both field errors (exact copy)")
+        void invalidNumericPostcodes_showErrors() {
+            page
+                    .typeOriginPostcode(TestConstants.INVALID_POSTAL_CODE)
+                    .typeDestinationPostcode(TestConstants.INVALID_POSTAL_CODE);
+
+            calculateAndWait();
+            assertBothFieldErrors();
+        }
+
+        @Test
+        @DisplayName("Invalid string postcodes show both field errors (exact copy)")
+        void invalidStringPostcodes_showErrors() {
+            page
+                    .typeOriginPostcode(TestConstants.INVALID_POSTAL_CODE_STRING)
+                    .typeDestinationPostcode(TestConstants.INVALID_POSTAL_CODE_STRING);
+
+            calculateAndWait();
+            assertBothFieldErrors();
+        }
+    }
+
+    @Nested
+    @DisplayName("Country/Postcode Mismatch")
+    class Mismatch {
+
+        @Test
+        @DisplayName("Mismatched postcodes vs countries shows global error and no result")
+        void mismatchedCountries_showGlobalError_noResult() {
+            page
+                    // Origin: Sweden + CZ postcode (mismatch)
+                    .selectOriginCountry(Country.SWEDEN)
+                    .typeOriginPostcode(Country.CZECH_REPUBLIC.getValidPostcode())
+                    // Destination: Czech Republic + SE postcode (mismatch)
+                    .selectDestinationCountry(Country.CZECH_REPUBLIC)
+                    .typeDestinationPostcode(Country.SWEDEN.getValidPostcode());
+
+            calculateAndWait();
+
+            String err = page.globalErrorText();
+
+            assertAll(
+                    () -> assertTrue(page.isGlobalErrorVisible(), "Global retrieval error should be visible"),
+                    () -> assertFalse(err.isBlank(), "Global error text should not be empty"),
+                    () -> assertFalse(page.isResultVisible(), "Result panel should NOT be visible"),
+                    () -> assertTrue(err.contains(TestConstants.TOOL_UNAVAILABLE_ERROR),
+                            "Global error should contain expected phrase (actual: " + err + ")")
+            );
+        }
     }
 }

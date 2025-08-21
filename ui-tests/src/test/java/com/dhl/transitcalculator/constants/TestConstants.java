@@ -2,9 +2,8 @@ package com.dhl.transitcalculator.constants;
 
 public class TestConstants {
     // Postal codes
-    public static final String VALID_CZ_POSTAL_CODE = "14800";
-    public static final String VALID_SE_POSTAL_CODE = "26234";
     public static final String INVALID_POSTAL_CODE = "777";
+    public static final String INVALID_POSTAL_CODE_STRING = "invalid";
 
     // Validation messages
     public static final String POSTAL_CODE_ERROR =
