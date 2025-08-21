@@ -63,24 +63,6 @@ By default, the tests will:
 
 ---
 
-## ⚙Configuration
-
-You can override default values via **system properties**:
-
-* `-DbaseUrl=<url>`
-  Target URL (default: DHL SE-EN calculator)
-* `-Dheadless=true|false`
-  Run Chrome in headless mode (default: true)
-* `-Dua=<user-agent>`
-  Custom user agent string (optional)
-
-Example:
-
-```bash
-mvn test -Dheadless=false -DbaseUrl=https://example.com/calculator
-```
-
----
 
 ## Implemented Test Scenarios
 
@@ -110,8 +92,8 @@ mvn test -Dheadless=false -DbaseUrl=https://example.com/calculator
 
 ## Next Steps (Future Improvements)
 
+* Add user journey where user is able to edit the calculator by pressing the edit previous step button
 * Add parameterized tests for more country combinations
-* Integrate with CI (Jenkins / GitHub Actions)
 * Generate HTML or Allure reports
 * Add cross-browser support
 
